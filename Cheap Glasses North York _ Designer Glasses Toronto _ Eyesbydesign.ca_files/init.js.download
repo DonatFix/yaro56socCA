@@ -1,0 +1,1072 @@
+
+/**
+ * designEdit
+ *
+ * @author      Paul Smiechowicz <paul@designofadecade.com>
+ * @copyright   2016 Paul Smiechowicz 
+ * @version     1.0
+ * @license     http://www.opensource.org/licenses/bsd-license.php
+ * @link        http://de.designofadecade.com/developers/js/init
+
+*/
+
+
+var DE = 
+{
+	// Vars.	
+	VERSION : '',
+	FOLDER : '/de',
+	BASE : '',
+	CACHE : '/de/cache',
+	UPLOADS : '/uploads',
+	CLIENT : null,
+	SMARTPHONE : false,
+	TABLET : false,
+	DEV : false,
+
+	// Config
+	config : function ()
+	{	
+		
+		
+	},
+	
+	// Init.
+	init : function ( _config, _callback )
+	{ 
+		// Vars.
+		var obj = this;
+		
+		// Parent
+		this.app.DE = this;
+		
+		// Config
+		if(_config)
+		{
+		
+			// Folder
+			if(_config.folder)
+				this.FOLDER = _config.folder;
+			
+			// Cache
+			if(_config.cache)
+				this.CACHE = _config.cache;
+
+			// Base
+			if(_config.base)
+				this.BASE = _config.base;
+			
+			// Uploades
+			if(_config.uploads)
+				this.UPLOADS = _config.uploads;
+			
+		}
+		
+		// Load min required
+		DE.tools.loadJsCss(( (_config && _config.client)?'/de/js/ut/client.js,':'' )+'/de/js/ut/ev.js,/de/js/ut/el.js,/de/js/ut/scroller.js'+( _config.loadJsCss?(','+_config.loadJsCss):''),function()
+		{
+			// Client
+			if(_config.client)
+			{
+				obj.CLIENT = DE.ut.client.init();
+				obj.SMARTPHONE = DE.ut.client.isMobile();
+				
+				// Mobile Flag
+				if(DE.ut.client.isMobile())
+					DE.ut.el['class'].add(document.getElementsByTagName("body")[0],'mobile');		
+				
+				// Canvas
+				obj.canvas.init(_config.canvasEl?_config.canvasEl:null,_config.fullscreen?_config.fullscreen:false); 
+			}
+			
+			// Listiners
+			
+				// Resize
+				DE.ut.ev.add(window,'resize',function()
+				{
+					obj.canvas.resize.update();	
+				});	
+
+				// Resize
+				DE.ut.ev.add(window,'scroll',function()
+				{
+					obj.canvas.resize.update();	
+				});		
+				
+			// Load App
+			if(_config.loadApp)
+				DE.tools.loadJs(_config.loadApp,_config.loadAppCallback?_config.loadAppCallback:null);
+			
+			// Callback
+			if(_callback)
+				_callback(obj);
+			
+		});
+	},
+	
+	// Globa
+	global : 
+	{
+		// Vars.
+		objects : {},
+		uniqueIdentifiers : 100,
+	
+		// Set
+		set : function ( _object )
+		{
+			this.uniqueIdentifiers++;
+			var id = 'global_'+this.uniqueIdentifiers;
+			this.objects[id] = _object;						
+			return id;		
+		},
+		
+		// Get
+		get : function ( _id )
+		{
+			return this.objects[_id];	
+		}		
+	},
+	
+	// Canvas
+	canvas : 
+	{
+		// Vars
+		el : null,
+		elSize : null,
+		width : 0,
+		height : 0,
+		offsetHeight : 0,
+		offsetWidth : 0,	
+		
+		// Config
+		config : function ( _options )
+		{
+			// Required
+			if(!_options)
+				return;
+			
+			// Set
+			if(_options.offsetWidth) this.offsetWidth = _options.offsetWidth;
+			if(_options.offsetHeight) this.offsetHeight = _options.offsetHeight;
+						
+		},
+		
+		getEl : function ()
+		{
+			// If not set init.
+			if(!this.el)
+				this.init();
+
+			return this.el;
+		},
+		
+		// Init.
+		init : function ( _el, _fullscreen )
+		{				
+			// Create wrapper
+			if(!_el)
+			{
+				if(_fullscreen)
+					this.el	= DE.ut.el.create({
+								el: 'div',
+								'class' : 'de_wrapper',
+								append : document.getElementsByTagName("body")[0]
+						  });
+				else
+					this.el	= document.getElementsByTagName("body")[0];
+			}
+			
+			// Set element
+			else
+				this.el = _el;
+			
+			// Update resize
+			this.resize.init(this);			
+		},
+		
+		// Clear
+		clear : function ()
+		{
+			DE.ut.el.remove(this.el);	
+		},
+	
+		// Resize 
+		resize : 
+		{
+			// Global
+			parent : null,			
+
+			// Vars.				
+			elements : [],
+			
+			// Elements
+			elWidth : null,
+			elHeight : null,
+			
+			// Init.
+			init : function ( _parent )
+			{
+				// Parent
+				if(_parent)
+					this.parent = _parent;
+					
+				
+				// Set element to calcualte canvas width and height
+				
+					// Width
+					this.elWidth = document.createElement("div");
+					this.parent.el.appendChild(this.elWidth);
+					this.elWidth.style.position = "fixed";
+					this.elWidth.style.height = "1px";
+					this.elWidth.style.width = "100%";
+					this.elWidth.style.top = "0px";
+					this.elWidth.style.left = "0px";
+					
+					// Height	
+					this.elHeight = document.createElement("div");
+					this.parent.el.appendChild(this.elHeight);
+					this.elHeight.style.position = "fixed";
+					this.elHeight.style.height = "100%";
+					this.elHeight.style.width = "1px";
+					this.elHeight.style.top = "0px";
+					this.elHeight.style.left = "0px";	
+				
+				// Update	
+				this.update();
+				
+					
+			},
+			
+			// Register
+			register : function ( _callback )
+			{
+				return this.elements.push(_callback)-1;				
+			},
+			
+			// Deregister
+			deregister : function ( _id )
+			{
+				delete this.elements[_id];				
+			},				
+			
+			// Update
+			update : function ()
+			{			
+				// Set
+				this.parent.width = this.elWidth.offsetWidth-this.parent.offsetWidth;
+				this.parent.height = this.elHeight.offsetHeight-this.parent.offsetHeight;		
+				
+				// Create object to pass for each registered element
+				var attributes = {
+									width : this.parent.width,
+									height : this.parent.height
+								 };				
+				// Update
+				for(var i in this.elements)
+				{					
+					if(this.elements[i] && this.elements[i](attributes))
+						delete this.elements[i];					
+				}
+			}		
+		}		
+		
+		
+	},
+	
+	// Apps
+	app :
+	{
+		// Vars.
+		DE : null,
+		instances : {},
+		objects : {},
+
+
+		// Install
+		install : function ( _id, _app )
+		{			
+			this.instances[_id] = _app(this.DE);
+		},
+		
+		// Import
+		import : function ( _url, _callback )
+		{
+			// Vars.
+			var obj = this,
+				activityIndicator = null,
+				appId = _url.split('/').pop();
+
+			// If loaded init.
+			if(obj.instances[appId])
+			{
+				_callback(new obj.instances[appId]);
+				return;
+			}
+
+			// Load
+
+				// Activity
+				activityIndicator = DE.ui.activityIndicator();
+
+				// Load
+				DE.tools.loadJs(_url+'/init.js',function()
+				{				
+					// Required Dependencies
+					if(obj.instances[appId].prototype.require && obj.instances[appId].prototype.require.constructor == Array)
+					{
+						DE.tools.loadJsCss(obj.instances[appId].prototype.require,function(){
+							_callback(new obj.instances[appId]);
+							activityIndicator();
+						});
+					}
+
+					else
+					{
+						_callback(new obj.instances[appId]);
+						activityIndicator();
+					}
+				});
+		},	
+
+		// Extend
+		extend : function ( _appId, _callback )
+		{
+			_callback(this.instances[_appId]);
+		},	
+		
+		// New
+		new : function ( _id )
+		{
+			return new this.instances[_id];
+		},
+
+		// Register
+		register : function ( _appId, _app )
+		{
+			if(this.objects[_appId])
+			{
+				console.error('DE - App '+_appId+' is already registered');
+				return;
+			}
+
+			this.objects[_appId] = _app;
+		},
+
+		// Get
+		get : function ( _appId )
+		{
+			return this.objects[_appId];
+
+		}				 
+	},
+	
+	// User interface
+	ui :
+	{			
+		// Activity Indicator
+		activityIndicator  : function ( _el, _delay )
+		{
+			// Vars.
+			var loader = null,
+				timeout = null;
+
+			// If delay is 0 load right away
+			if(_delay === 0) {
+				loader = DE.ut.el.create({
+							el: 'div',
+							'class' : 'loader',
+							append : (_el !== undefined && _el)?_el:document.body		
+				});	
+			}
+
+			// Timeout
+			else {
+				timeout = setTimeout(function() {
+					loader = DE.ut.el.create({
+							el: 'div',
+							'class' : 'loader',
+							append : (_el !== undefined && _el)?_el:document.body		
+					});	
+				},(_delay !== undefined)?_delay:500);
+			}
+			
+			// Remove	
+			return function() {
+				clearTimeout(timeout);
+				if(loader)
+					DE.ut.el.remove(loader);
+			 };	
+		},
+
+		// Info Indicator
+		infoIndicator  : function ( _el, _info, _delay )
+		{
+			var loader = null,
+				elInfoText = null,
+				timeout = setTimeout(function()
+				{
+					loader = DE.ut.el.create({
+							 el: 'div',
+							'class' : 'loader info',
+							html : '<div>'+_info+'<div>',
+							append : (_el !== undefined && _el)?_el:document.body		
+					});	
+
+					// Cache
+					elInfoText = loader.getElementsByTagName('DIV')[0];	
+
+				},(_delay !== undefined)?_delay:500);
+			
+			// Remove	
+			return function ( _info ) 
+			{
+				// If info is empty close
+				if(!_info)
+				{
+					clearTimeout(timeout);
+					if(loader)
+						DE.ut.el.remove(loader);
+				}
+				
+				// Update
+				if(elInfoText)
+					elInfoText.innerHTML = _info;
+			 };	
+		},
+
+		// Progress Indicator
+		progressIndicator  : function ( _el, _title, _delay )
+		{
+			var loader = null,
+				elProgressBar = null,
+				elInfoText = null,
+				timeout = setTimeout(function()
+				{
+					loader = DE.ut.el.create({
+											el: 'div',
+											'class' : 'progress',
+											html : '<div><div></div><span></span></div>',
+											append : (_el !== undefined && _el)?_el:document.body		
+					});	
+
+					// Cache
+					elProgressBar = loader.getElementsByTagName('DIV')[1];
+					elInfoText = loader.getElementsByTagName('SPAN')[0];	
+
+				},(_delay !== undefined)?_delay:500);
+
+			
+			
+			// Remove	
+			return function( _progress ) 
+			{
+				// Close if progress is 100
+				if(_progress == 100)
+				{
+					clearTimeout(timeout);
+					if(loader)
+						DE.ut.el.remove(loader);
+				}
+
+				// Update
+				if(elProgressBar)
+				{
+					elProgressBar.style.width = _progress+'%';
+					elInfoText.innerHTML = _title+' ('+_progress+'%)';
+				}
+
+				
+			 };	
+		},
+
+		// Drag
+		dragIndicator  : function ( _label, _value, _img )
+		{
+			// Vars.
+			var el = DE.ut.el.create({	
+									el : 'div',
+									'class' : 'drag'+( _img?' img':'' ),									
+									html : ( _img?'<img src="'+_img+'" draggable="false" oncontextmenu="return false;" ondragstart="return false" >':'' )+'<div><label>'+_label+'</label><span>'+_value+'</span></div><div><label></label><span></span></div>',				
+									append : document.getElementsByTagName('body')[0]
+									});
+				labels = el.getElementsByTagName('label'),
+				values = el.getElementsByTagName('span');			
+			
+			// Remove	
+			return {
+					el : el,
+					over : function ( _over )
+					{
+						if(_over)
+							el.classList.add('over');
+						else
+							el.classList.remove('over');
+					},
+					dragLabel : function ( _value )
+					{
+						labels[0].textContent = _value;	
+					},
+					dropLabel : function ( _value )
+					{
+						labels[1].textContent = _value;	
+					},
+					dropValue : function ( _value )
+					{
+						values[1].textContent = _value;	
+					},
+					remove : function ()
+					{
+						DE.ut.el.remove(el);
+					}
+				   };	
+		},
+
+		// Touch
+		touchIndicator : function ( _x, _y )
+		{
+			// Vars.
+			var el = DE.ut.el.create({	
+									el : 'div',
+									'class' : 'de_touch_target',
+									style : 'top: '+(_y-50)+'px; left: '+(_x-50)+'px',									
+									append : document.getElementsByTagName('body')[0]
+									})					
+			// Object	
+			return {
+					el : el,
+					update : function ( _x, _y )
+					{
+						el.style.left = (_x-50)+"px";														
+						el.style.top = (_y-50)+"px"
+					},
+					remove : function ()
+					{
+						DE.ut.el.remove(el);
+					}};	
+		}		
+	},
+	
+	// Utilities
+	ut : 
+	{
+		
+		
+	},
+	
+	// REMOVE!
+	util : 
+	{
+		
+		
+	},
+	
+	// Libs
+	libs : 
+	{
+		
+		
+	},	
+	
+	// Effects
+	effects : 
+	{
+		
+		
+	},
+	
+	// AJAX
+	http : 
+	{
+		// Vars.
+		onError : null,
+		onRequest : null,
+
+		// Request
+		request : function ( _options )
+		{	
+			// Init.
+			var obj=this,request = new XMLHttpRequest(),i;			
+
+			// System Path
+			if(_options.url.indexOf('/de/') === 0)
+				_options.url = _options.url.replace('/de',DE.FOLDER);
+
+			// Open
+			request.open(
+					_options.method?_options.method:'GET',
+					_options.url,
+					_options.async?_options.async:true,
+					_options.user?_options.user:'',
+					_options.password?_options.password:''
+					);
+
+			// Credentials 
+			request.withCredentials = _options.withCredentials?_options.withCredentials:false;
+					
+			// Header
+			if(_options.headers)
+				for(i in _options.headers) {
+
+					// Custom header overwrite
+					if(_options.headers[i].header == 'Authorization')
+						request.setRequestHeader('DEAUTHORIZATION',_options.headers[i].value);	
+					
+					request.setRequestHeader(_options.headers[i].header,_options.headers[i].value);
+				}
+
+			// Response Type
+			if(_options.type && _options.type != 'json')
+				request.responseType = _options.type;
+
+			// Requset Observer Callback
+			if(obj.onRequest)
+				this.onRequest(request,_options)
+
+			// Callback
+			request.onreadystatechange = function()
+			{	 
+				// Offline
+				if(request.readyState == 4 && !request.status && !navigator.onLine && obj.onError)
+				{ 
+					obj.onError({status:0},function(){ 
+						obj.request(_options); 
+					});
+
+					return;
+				}
+
+				// Completed	
+				if(request.readyState == 3)
+				{ 
+					// Success
+					if(request.status == 200)
+					{
+						if(_options.onProgress)
+							_options.onProgress(request.responseText);
+						
+					}
+
+				}
+				
+				// Completed	
+				else if(request.readyState == 4)
+				{   
+					// Success
+					if(request.status == 200)
+					{
+						if(_options.onSuccess)
+						{ 
+							if(_options.type == 'document' || _options.type == 'arraybuffer')
+								_options.onSuccess(request.response,request);
+							else if(_options.type == 'json')
+								_options.onSuccess(JSON.parse(request.responseText),request);
+							else
+								_options.onSuccess(request.responseText,request);
+						}
+					}
+
+					// Error
+					else if(_options.onError != null)
+						_options.onError(request,function(){ obj.request(_options); });
+
+					// Error
+					else if(obj.onError != null)
+						obj.onError(request,function(){ obj.request(_options); });
+
+				}
+			}
+			
+			// Send
+			request.send(_options.data?_options.data:null);	
+		},
+
+		// Get
+		get : function ( _options )
+		{
+			// Method
+			_options.method = 'GET';
+
+			// Seralize
+			if(_options.data)
+			{
+				if(typeof _options.data == 'object')
+					_options.data = DE.tools.serialize(_options.data);
+
+				_options.url += (  (_options.url.indexOf('?') != -1)?'&':'?' )+_options.data;
+			}
+
+			// Header
+			if(!_options.headers)
+				_options.headers = [{header:'Content-type',value:'application/x-www-form-urlencoded; charset=UTF-8'}];
+			else
+				_options.headers.push({header:'Content-type',value:'application/x-www-form-urlencoded; charset=UTF-8'});
+
+			// Request
+			this.request(_options);
+		},
+
+		// Post
+		post : function ( _options )
+		{
+			// Method
+			_options.method = 'POST';	
+
+			// Form data
+			if((_options.data && _options.data.constructor.name == 'FormData') || _options.formData)
+			{
+				this.request(_options);		
+				return;
+			}		
+
+			// Seralize
+			if(typeof _options.data == 'object')
+				_options.data = DE.tools.serialize(_options.data);
+
+			// Header
+			if(!_options.headers)
+				_options.headers = [{header:'Content-type',value:'application/x-www-form-urlencoded; charset=UTF-8'}];
+			else
+				_options.headers.push({header:'Content-type',value:'application/x-www-form-urlencoded; charset=UTF-8'});
+
+			// Request
+			this.request(_options);
+		},
+
+		// JSON
+		json : function ( _options, _data, _success )
+		{ 	
+			// Method
+			_options.method = 'POST';
+
+			// Seralize
+			_options.data = JSON.stringify(_options.data);
+
+			// Type
+			if(_options.type === undefined)
+				_options.type = 'json';
+			
+			// Header
+			if(!_options.headers)
+				_options.headers = [{header:'Content-type',value:'application/json'}];
+			else
+				_options.headers.push({header:'Content-type',value:'application/json'});
+			
+			// Callback
+			if(_options.onSuccess && (_options.type == '' || _options.type == 'json'))
+			{
+				var callback = _options.onSuccess;
+				_options.onSuccess = function ( _data )
+				{
+					callback(_data);
+				}
+			}
+
+
+			// Request
+			this.request(_options);
+
+			
+		}
+	
+	},
+	
+	// Layout
+	layout : 
+	{		
+		// Form
+		form : function ( _el, _onSuccess, _onInit )
+		{		
+			
+			// Vars.
+			var form =  (_el.nodeName == 'FORM')?_el:_el.getElementsByTagName("FORM")[0],
+				submitButton = form.getElementsByTagName("BUTTON")[0],
+				elements = {
+							 form : form,
+							 fields : form.getElementsByClassName('form_fields')[0] || null,
+							 success : form.getElementsByClassName('form_message_success')[0] || null,
+							 error : form.getElementsByClassName('form_message_error')[0] || null,
+							 headings : {}
+						   },
+				headings = [],
+				id = '',
+				i;			
+			
+			// Parse
+				
+				// Headings
+				headings = form.getElementsByClassName('form_heading');
+				if(headings.length)
+				{
+					for(i=0; i < headings.length; i++)
+					{
+						id = DE.ut.el.data.get(headings[i],'id');
+						if(id)
+							elements.headings[id] = headings[i];
+					}
+				}
+						
+			
+			// On init.
+			if(_onInit)
+				_onInit(elements);
+			
+			// If form exist set submit
+			if(form)
+			{
+				// Submit
+				DE.ut.ev.add(form,'submit',function(_event)
+				{
+					// Prevent Submit
+					DE.ut.ev.preventDefault(_event);
+					
+					// Validate
+					if(DE.tools.form.validate({
+										form : form,
+										tag : 'required',
+										errorClass : 'error',
+										errorBubble : true,
+										submitButton : submitButton
+									}))
+					{					
+						// Callback
+						if(_onSuccess)
+							_onSuccess(elements);	
+					}	
+				});
+				
+				// Error
+				if(elements.error)
+					DE.ut.ev.add(form,'click',function(_event)
+					{
+						elements.error.style.display = 'none';	
+					});
+				
+			}
+		
+		}
+		
+	},
+	
+	// Tools
+	tools : 
+	{
+		// Vars.
+		loaded : [],
+
+		// Resolve
+		resolveObjPath : function ( _path, _obj ) {
+			return _path.split('.').reduce(function( _prev, _curr) {
+				return _prev?_prev[_curr] : null
+			},_obj);
+		},
+		
+		// Load
+		
+			// JavaScript
+			loadJs : function( _filename, _callback )
+			{ 
+				// Check if loaded
+				if(this.loaded.indexOf && this.loaded.indexOf(_filename) != -1)
+				{
+					_callback();
+					return;	
+				}			
+				
+				// Vars.
+				var obj = this,
+					script = document.createElement('script');
+					script.setAttribute("type","text/javascript");
+				
+				// Callback
+				if(typeof _callback == "function")
+				{
+					if(script.onload !== undefined)
+						script.onload = function(){
+							obj.loaded.push(_filename);
+							_callback();
+						};
+					else
+						script.onreadystatechange = function () 
+						{
+							script.onreadystatechange = null;
+							if(this.readyState == 'complete') 
+							{
+								obj.loaded.push(_filename);
+								_callback();
+							}
+							else if(this.readyState == 'loading') 
+								setTimeout(function()
+								{
+									obj.loaded.push(_filename);
+									_callback();
+								},50);
+						}
+				}
+				
+				// Src.
+				script.setAttribute("src",( (_filename.indexOf('/de/') === 0)?_filename.replace('/de',DE.FOLDER):_filename  )+( (DE.VERSION || DE.DEV)?( '?'+( DE.VERSION?DE.VERSION:Math.random()) ):'' ));
+				
+				// Insert
+				document.getElementsByTagName("head")[0].appendChild(script);	
+			},
+			
+			// Css
+			loadCss : function( _filename, _callback )
+			{ 
+				// Check if loaded
+				if(this.loaded.indexOf && this.loaded.indexOf(_filename) != -1)
+				{
+					_callback();
+					return;	
+				}
+				// Vars.
+				var obj = this,				
+				css = document.createElement("link");
+				css.setAttribute("rel","stylesheet");
+				css.setAttribute("type","text/css");
+				css.setAttribute("href",( (_filename.indexOf('/de/') === 0)?_filename.replace('/de',DE.FOLDER):_filename  )+( (DE.VERSION || DE.DEV)?( '?'+( DE.VERSION?DE.VERSION:Math.random()) ):'' ));
+				document.getElementsByTagName("head")[0].appendChild(css);
+				
+				// Callback
+				if(typeof _callback == "function")
+				{
+					// CSS
+					function cssOnLoad ( _link, _callback ) 
+					{	
+						var loaded = false;
+						try{
+							if(_link.sheet && _link.sheet.cssRules.length > 0 )
+								loaded = true;
+							else if (_link.styleSheet && _link.styleSheet.cssText.length > 0 )
+								loaded = true;
+							else if (_link.innerHTML && _link.innerHTML.length > 0 )
+								loaded = true;
+						}
+						catch(ex){ }
+						
+						if(loaded)
+						{
+							obj.loaded.push(_filename);
+							_callback();
+						}
+						else 
+							setTimeout(function(){
+								cssOnLoad(_link,_callback);
+							}, 100);
+					}		
+					cssOnLoad(css,_callback);
+				}
+					
+			},
+			
+			// Js/Css
+			loadJsCss : function( _filenames, _callback )
+			{
+				if(_filenames == '')
+				{
+					if(typeof _callback == "function")
+						_callback();
+				}
+				
+				// Callback
+				else
+				{
+					// Var.s
+					var files = (_filenames.constructor != Array)?_filenames.split(','):_filenames,
+						file = files.shift();
+						
+					// CSS
+					if(file.indexOf(".css") != -1)
+						this.loadCss(file, function(){
+								DE.tools.loadJsCss(files,_callback);	
+							});	
+							
+					// JS
+					else if(file.indexOf(".js") != -1)
+						this.loadJs(file, function(){
+								DE.tools.loadJsCss(files,_callback);	
+							});	
+					else 
+						DE.tools.loadJsCss(files,_callback);			
+				}
+			},
+			
+			// Speed Up Dom Relow
+			speedUpDomReflow : function ( _element ) 
+			{
+				
+			  // Vars.
+			  var parentNode = _element.parentNode,
+			  	  nextSibling = _element.nextSibling;
+				
+			  // Remove	
+			  parentNode.removeChild(_element);
+			 
+			  return function() 
+			  {
+				if(nextSibling)
+				  parentNode.insertBefore(_element,nextSibling);
+				else
+				  parentNode.appendChild(_element);
+			  };
+			},
+			
+			isInDocument : function( _element ) 
+			{
+				if(!_element.parentNode)
+					return false;
+				
+				while(_element = _element.parentNode) 
+				{
+					if(_element == document)
+						return true;
+				}
+				return false;
+			},
+
+			serialize : function ( _obj ) 
+			{
+			  var str = [],
+			  	  i;
+
+			  for(i in _obj)
+			    if(_obj.hasOwnProperty(i)) 
+			    {
+			      str.push(encodeURIComponent(i)+"="+encodeURIComponent(_obj[i]));
+			    }
+
+			  return str.join("&");
+			}
+
+	},
+
+
+	// Get
+
+		getEl : function ()
+		{
+			return ( arguments[1]?arguments[0]:document ).getElementById( arguments[1]?arguments[1]:arguments[0] );
+		},
+
+		getTag : function ()
+		{
+			return ( arguments[1]?arguments[0]:document ).getElementsByTagName( arguments[1]?arguments[1]:arguments[0] );
+		},
+
+		getClass : function ()
+		{
+			return ( arguments[1]?arguments[0]:document ).getElementsByClassName( arguments[1]?arguments[1]:arguments[0] );
+		}
+	
+}
+
+// Polyfill
+
+	// Remove
+	if (!('remove' in Element.prototype)) {
+		Element.prototype.remove = function() {
+			if (this.parentNode) {
+				this.parentNode.removeChild(this);
+			}
+		};
+	}

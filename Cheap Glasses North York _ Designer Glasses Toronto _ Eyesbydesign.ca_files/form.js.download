@@ -1,0 +1,1153 @@
+DE.tools.form = 
+{
+	// Select
+	select : 
+	{
+		// Set
+		set : function ( _el, _array, _keyMap ) 
+		{		
+			this.clear(_el);
+			this.add(_el,_array,_keyMap);			
+		},
+
+		// Selected
+		selectValue : function ( _obj, _value )
+		{
+			var el = (_obj.tagName == 'SELECT')?_obj:document.getElementById(_obj),
+				i=0;
+			for(i=0; i < el.length; i++) 
+				if(el.options[i].value == _value)
+				{
+			  		el.selectedIndex = i;	
+					return true;	
+				}
+			return false
+		},
+		
+		// Selected
+		selected : function ( _el, _value )
+		{
+			for(var i=0; i < _el.length; i++) 
+				if(_el.options[i].value == _value)
+				{
+			  		_el.selectedIndex = i;	
+					return true;	
+				}
+			return false
+		},
+		
+		// Reset
+		reset : function ( _el )
+		{
+			_el.selectedIndex = 0;
+		},
+		
+		// Add
+		add : function ( _el, _array, _keyMap ) 
+		{		
+			// Map
+			if(!_keyMap)
+				_keyMap = {
+					value : 'value',
+					title : 'key'	
+				};
+			
+			// Set		
+			for(var i=0; i < _array.length; i++) 
+			  _el.options[i] = new Option(_array[i][_keyMap.title]?_array[i][_keyMap.title]:(_array[i].name?_array[i].name:''),_array[i][_keyMap.value]);	
+		},			
+		
+		// Clear
+		clear : function ( _el ) 
+		{		
+			var length = _el.length
+				r = 0;				
+			for(r = length; r >= 0; r--) 
+			  _el.remove(r);	
+		}
+	
+	},
+		
+	
+	// Change type
+	changeType : function ( _el, _options )
+	{			
+		// Element
+		var newEl = document.createElement(_options.element);
+		
+		// Type
+		if(_options.type)
+			newEl.setAttribute('type',_options.type);
+		else if(_options.element == 'input')
+			newEl.setAttribute('type','text');
+			
+		// Attributes	
+		newEl.className = (_options['class'])?_options['class']:_el.className;
+		newEl.setAttribute('name',(_options.name)?_options.name:_el.getAttribute('name'));
+		newEl.setAttribute('id',(_options.id)?_options.id:_el.getAttribute('id'));
+		newEl.setAttribute('placeholder',(_options.placeholder)?_options.placeholder:(_el.getAttribute('placeholder')?_el.getAttribute('placeholder'):''));
+		newEl.setAttribute('tabindex',(_options.tabindex)?_options.tabindex:_el.getAttribute('tabindex'));
+		_el.parentNode.replaceChild(newEl,_el);	
+		
+		return newEl;	
+		
+	},
+	
+	// Limit Lenght
+	limitLength : function ( _el, _limit ) 
+	{
+		if(_el.value.length >= _limit )
+			_el.value = _el.value.substring(0,_limit);
+	},	
+	
+	// Phone Format
+	formatPhone : function ( _el ) 
+	{
+		var value = _el.value.replace(/[^0-9.]/g, "");
+		_el.value = value.substr(0,3)+( (value.length >= 4)?'-'+value.substr(3,3):'' )+( (value.length >= 7)?'-'+value.substr(6,4):'' )
+	},	
+	
+	// Price Format
+	formatPrice : function ( _el ) 
+	{				
+		_el.value = _el.value.replace(/\$|,/,'').replace(/[^0-9.]/g, "");
+	},	
+	
+	// Format currency
+	formatCurrency : function  ( Num, _symbol) 
+	{
+		Num = Num.toString().replace(/\$|\,/g,'');
+					
+		if(isNaN(Num))
+			Num = "0";
+				
+		sign = (Num == (Num = Math.abs(Num)));
+		Num = Math.floor(Num*100+0.50000000001);
+		cents = Num%100;
+		Num = Math.floor(Num/100).toString();
+				
+		if(cents<10)
+			cents = "0" + cents;
+				
+		for (var i = 0; i < Math.floor((Num.length-(1+i))/3); i++)
+			Num = Num.substring(0,Num.length-(4*i+3))+','+
+				
+		Num.substring(Num.length-(4*i+3));
+				
+		return (((sign)?'':'-') + ( _symbol?'$':'' )+ Num + '.' + cents);
+	},
+	
+	// Add another
+	addAnother : function (_count, _elId, _callback, _max )
+	{
+		// Set if blank
+		if(!this['addAnotherCount_'+_elId])
+		{
+			this['addAnotherCount_'+_elId] = {
+												template : _count?false:true,
+												templateHtml : !_count?document.getElementById('layout_'+_elId).innerHTML:'',
+												templateClass : !_count?document.getElementById('layout_'+_elId).className:'',
+												count : _count,
+												uniqueId : _count,
+											 }
+
+		}
+
+		// If template clear
+		if(this['addAnotherCount_'+_elId].template)
+			document.getElementById('layout_'+_elId).innerHTML = '';
+
+							
+		// Append
+		this['addAnotherCount_'+_elId].count++;
+		this['addAnotherCount_'+_elId].uniqueId++;
+				
+		var elAppend = document.getElementById('add_'+_elId),
+			el = DE.util.Element.create({
+						el:'div',
+						id : _elId+'_'+this['addAnotherCount_'+_elId].uniqueId,
+						'class' : ( this['addAnotherCount_'+_elId].templateClass?this['addAnotherCount_'+_elId].templateClass:document.getElementById('layout_'+_elId).className ) ,
+						html: ( this['addAnotherCount_'+_elId].templateHtml?this['addAnotherCount_'+_elId].templateHtml:document.getElementById('layout_'+_elId).innerHTML ) .replace(new RegExp("\\["+_count+"\\]",'g'),'['+this['addAnotherCount_'+_elId].uniqueId+']').replace(new RegExp("_"+_count+"",'g'),'_'+this['addAnotherCount_'+_elId].uniqueId),
+						append:elAppend
+					});		
+
+		var buttonAdd = elAppend.getElementsByClassName('button_add_'+_elId),
+			buttonRemove = elAppend.getElementsByClassName('button_remove_'+_elId),
+			buttonOther = elAppend.getElementsByClassName('button_other_'+_elId);
+
+			if(buttonAdd[buttonAdd.length-2])
+				buttonAdd[buttonAdd.length-2].style.display = 'none';
+			buttonAdd[buttonAdd.length-1].style.display = '';
+
+			if(buttonOther.length)
+			{
+				if(buttonOther[buttonOther.length-2])
+					buttonOther[buttonOther.length-2].style.display = 'none';
+				buttonOther[buttonOther.length-1].style.display = '';
+			}
+
+
+			buttonRemove[buttonRemove.length-1].style.display = '';
+			buttonRemove[0].style.display = (buttonRemove.length == 1)?'none':'';
+							
+		// Chosen
+		if(_callback)
+			_callback(this['addAnotherCount_'+_elId],el);	
+		
+		// Max	
+		if(_max && _max == this['addAnotherCount_'+_elId].count && document.getElementById('button_'+_elId))		
+			DE.util.Element.remove(document.getElementById('button_'+_elId));								
+												
+	},	
+
+	// Remove
+	removeAnother : function ( _elId, _removeElId )
+	{ 
+		
+		DE.util.Element.remove(document.getElementById(_removeElId));
+		this['addAnotherCount_'+_elId].count--;
+
+		var elAppend = document.getElementById('add_'+_elId),
+			buttonAdd = elAppend.getElementsByClassName('button_add_'+_elId),
+			buttonRemove = elAppend.getElementsByClassName('button_remove_'+_elId),
+			buttonOther = elAppend.getElementsByClassName('button_other_'+_elId);
+
+			if(buttonAdd[buttonAdd.length-2])
+				buttonAdd[buttonAdd.length-2].style.display = 'none';
+			buttonAdd[buttonAdd.length-1].style.display = '';	
+
+			buttonRemove[buttonRemove.length-1].style.display = '';
+			buttonRemove[0].style.display = (buttonRemove.length == 1)?'none':'';
+
+			if(buttonOther.length)
+			{
+				if(buttonOther[buttonOther.length-2])
+					buttonOther[buttonOther.length-2].style.display = 'none';
+				buttonOther[buttonOther.length-1].style.display = '';
+			}
+	},
+	
+	
+	// Disable
+	disable : function( _disable, _el )
+	{
+		// Set id to object
+		if(typeof _el == 'string')
+			_el = document.getElementById(_el);
+		
+		// Class
+		if(_disable)			
+			_el.classList.add('disabled');	
+		else
+			_el.classList.remove('disabled');
+			
+		// Inputs
+		var elements = _el.getElementsByTagName('*'), i;
+		for(i=0; i < elements.length; i++)
+			if(elements[i].type)
+			{
+				// Clear value
+				if(elements[i].type == 'select-one' || elements[i].type == 'select')
+					elements[i].selectedIndex = 0;
+				else if(elements[i].value)
+					elements[i].value = '';	
+				
+				// Disable
+				elements[i].disabled = _disable;		
+				
+								
+			}
+	},
+	
+	
+	// Clear
+	clear : function( _el )
+	{		
+		// Set id to object
+		if(typeof _el == 'string')
+			_el = document.getElementById(_el);
+			
+		var elements = _el.getElementsByTagName('*'), i;
+		for(i=0; i < elements.length; i++)
+			if(elements[i].type)
+			{
+				// Clear value
+				if(elements[i].type == 'select-one' || elements[i].type == 'select' ||  elements[i].type == 'select-multiple')
+					elements[i].selectedIndex = 0;
+				else if(elements[i].value)
+					elements[i].value = '';			
+				
+								
+			}
+	},
+	
+	
+	// Validate
+	validate : function ( _options ) 
+	{	
+		formObject = _options.form;
+		requiredType = _options.errorClass?'class':'color';
+		requiredValue = _options.errorClass?_options.errorClass:_options.errorColour;
+		requiredClassTag = _options.tag?_options.tag:'required';
+		requiredBubble = _options.errorBubble?_options.errorBubble:false;
+		requiredErrorElClass = _options.errorElClass?_options.errorElClass:null;		
+		requiredAlertObjectId = _options.errorMessageElId?_options.errorMessageElId:'';
+		
+		// Submit
+		submitButton = _options.submitButton?_options.submitButton:null;
+		submitButtonBubble = null;
+		
+			// Find
+			if(submitButton)
+			{
+				if(submitButton.nextSibling && submitButton.nextSibling.className && submitButton.nextSibling.className.match(/^bubble/))
+					submitButtonBubble = submitButton.nextSibling
+				else if(submitButton.nextSibling.nextSibling && submitButton.nextSibling.nextSibling.className && submitButton.nextSibling.nextSibling.className.match(/^bubble/))
+					submitButtonBubble = submitButton.nextSibling.nextSibling;
+			}
+	
+		// Veriables
+		var valid = true;
+		var requiredConfirmationObjects = new Object();	
+		var requiredOrObjects = new Object();	
+		var requiredOrObjectsInputs = {};
+		var countOrObjects = new Object();
+		
+		// Set in-valid message
+		function setInvalidMessage(_id,_valid)
+		{
+			if(document.getElementById(_id))
+			{
+				if(!_valid)
+					document.getElementById(_id).style.display = "block";
+				else
+					document.getElementById(_id).style.display = "none";
+			}
+		}
+		
+		// Set in-valid highligh
+		function setInvalid(invalidObject,lableId,verifyDefaultValue) 
+		{
+			
+			
+			var defaultValueFunction = '';
+			if(verifyDefaultValue) 
+				defaultValueFunction = ";if(this.value==this.defaultValue || this.value=='REQUIRED') this.value='';";
+			
+			if(lableId != null && document.getElementById(lableId)) 
+			{
+				if(requiredType == 'class') 
+				{
+					var cleanClassName = invalidObject.className.replace(RegExp(" "+requiredValue),''); 
+					document.getElementById(lableId).className = document.getElementById(lableId).className.replace(RegExp(" "+requiredValue),''); 			
+					if (invalidObject.type == 'checkbox' || invalidObject.type == 'radio')
+					{ 
+						if(formObject[invalidObject.name].length) 
+							for(var r=0; r < formObject[invalidObject.name].length; r++) {
+								formObject[invalidObject.name][r].addEventListener('click',function( _e ) {
+
+									_e.target.className = cleanClassName;
+
+									console.log('test 2');
+									
+									// Label
+									if(lableId && document.getElementById(lableId))
+										document.getElementById(lableId).classList.remove(requiredValue);
+
+								});
+
+							}
+
+						else 
+							formObject[invalidObject.name].addEventListener('click',function( _e ) {
+								
+								_e.target.className = cleanClassName;
+								
+								// Label
+								if(lableId && document.getElementById(lableId))
+									document.getElementById(lableId).classList.remove(requiredValue);
+
+							});
+
+					}
+					else  
+					{
+						if(invalidObject.type == 'select-one' || invalidObject.type == 'select' ||  invalidObject.type == 'select-multiple')
+						{
+							document.getElementById(lableId).onclick = function()
+							{
+								document.getElementById(lableId).className = document.getElementById(lableId).className.replace(RegExp(" "+requiredValue),'');  
+							}								
+						}
+						else
+						{
+							invalidObject.onfocus = new Function("document.getElementById('"+lableId+"').className='"+document.getElementById(lableId).className+"'"+defaultValueFunction);							
+						}
+					}
+					
+					document.getElementById(lableId).className += ' '+requiredValue;
+				} 
+				else if(requiredType == 'color') 
+				{
+					document.getElementById(lableId).style.color = requiredValue;				
+					if (invalidObject.type == 'checkbox' || invalidObject.type == 'radio') 
+					{
+						if(formObject[invalidObject.name].length)
+							for(var r=0; r < formObject[invalidObject.name].length; r++) 
+								formObject[invalidObject.name][r].onfocus = new Function("document.getElementById('"+lableId+"').style.color=''"+defaultValueFunction);	
+					}
+					else 
+						invalidObject.onfocus = new Function("document.getElementById('"+lableId+"').style.color=''"+defaultValueFunction);
+				}
+			} 
+			else 
+			{
+				if(requiredType == 'class') 
+				{
+					invalidObject.className = invalidObject.className.replace(RegExp(" "+requiredValue),''); 
+					if(!requiredErrorElClass && (invalidObject.type == 'checkbox' || invalidObject.type == 'radio')) 
+					{
+						if(formObject[invalidObject.name].length) 
+							for(var r=0; r < formObject[invalidObject.name].length; r++)
+								formObject[invalidObject.name][r].onfocus = new Function("this.className='"+invalidObject.className+"'"+defaultValueFunction);
+					}
+					else 	
+					{										
+						var inputClass = invalidObject.className,
+							inputBubble = null,
+							inputLabel = null,	
+							inputLabelClass = '',	
+							labedllist = invalidObject.form.getElementsByTagName("LABEL");
+							
+						// Label
+						for(var i in labedllist)
+							if(invalidObject.id && labedllist[i].htmlFor == invalidObject.id)
+							{
+								inputLabel = labedllist[i];
+								inputLabelClass = labedllist[i].className;
+								break;	
+							}
+							
+						// Bubble
+						
+						
+							// Find
+							if(requiredErrorElClass)
+							{
+								var requiredErrroEl = invalidObject.parentNode,
+									count = 0;
+								while(requiredErrroEl.className.indexOf(requiredErrorElClass) == -1)
+								{
+									requiredErrroEl = requiredErrroEl.parentNode;
+									count++;
+									if(count == 20)
+									{
+										requiredErrroEl = null;
+										break;
+									}
+								}		
+								
+																					
+								if(requiredErrroEl)
+								{
+									requiredErrroEl.className = requiredErrroEl.className.replace(requiredValue,'')+' '+requiredValue;									
+									requiredErrroEl.onclick = function()
+									{										
+										requiredErrroEl.className = requiredErrroEl.className.replace(requiredValue,'');
+									}
+									
+									return false;	
+								}
+								
+								
+							} else if(invalidObject.nextSibling && invalidObject.nextSibling.className && invalidObject.nextSibling.className.match && invalidObject.nextSibling.className.match(/^bubble/))
+								inputBubble = invalidObject.nextSibling
+							else if(invalidObject.nextSibling && invalidObject.nextSibling.nextSibling && invalidObject.nextSibling.nextSibling.className && invalidObject.nextSibling.nextSibling.className.match && invalidObject.nextSibling.nextSibling.className.match(/^bubble/))
+								inputBubble = invalidObject.nextSibling.nextSibling;
+							
+							// Set
+							if(inputBubble)
+								inputBubble.style.display = 'block';
+						
+							
+							// On Focus
+							invalidObject.onfocus = function()
+							{
+								// Reset
+								invalidObject.className = inputClass;
+								
+								// Label
+								if(inputLabel)
+									inputLabel.className = inputLabelClass;	
+								
+								// Bubble
+								if(inputBubble)
+									inputBubble.style.display = "none";
+									
+								// Submit Bubble
+								if(submitButtonBubble)
+									submitButtonBubble.style.display = "none";	
+									
+							}
+							
+							// Bubble
+							if(inputBubble)
+								inputBubble.onclick = function()
+								{										
+									// Reset
+									invalidObject.className = inputClass;	
+									inputBubble.style.display = "none";
+									inputBubble.onclick = null;
+									
+									// Label
+									if(inputLabel)
+										inputLabel.className = inputLabelClass;
+									
+									// Submit Bubble
+									if(submitButtonBubble)
+										submitButtonBubble.style.display = "none";
+									
+								}
+						
+					}
+					
+					invalidObject.className += ' '+requiredValue;
+					if(inputLabel)
+						inputLabel.className += ' '+requiredValue;
+				} 
+				else if(requiredType == 'color') 
+				{
+					invalidObject.style.color = requiredValue; 
+					if (invalidObject.type == 'checkbox' || invalidObject.type == 'radio') 
+					{
+						if(formObject[invalidObject.name].length) 
+							for(var r=0; r < formObject[invalidObject.name].length; r++)
+								formObject[invalidObject.name][r].onfocus = new Function("this.style.color=''"+defaultValueFunction);	
+					}
+					else 
+						invalidObject.onfocus = new Function("this.style.color=''"+defaultValueFunction);
+				}
+			}
+			
+			// Apply class to label Id
+			if(_options.erroLabelId && !lableId)
+			{
+				var inputLabel = invalidObject.id.replace('input','label');
+				if(document.getElementById(inputLabel))
+					setInvalid(invalidObject,inputLabel,verifyDefaultValue); 	
+			}
+			
+		}
+	
+		// Scan form
+		for (var i = 0; i < formObject.length; i++) 
+		{
+			if (formObject[i].className.match(RegExp("^"+requiredClassTag+"|\ "+requiredClassTag+""))) 
+			{
+					// Get attributes
+					var inputValid = true;
+					var classExplode = formObject[i].className.split(' '); 
+					for (var c = 0; c < classExplode.length; c++) 
+					{
+						if(classExplode[c].match(RegExp("^"+requiredClassTag+""))) 
+						{
+							var requiredAttributes = classExplode[c].replace(/\\_/g,'~~').split('_');
+							break;
+						}
+					}
+					var verifyOptional = false;
+					var verifyEmail = false;
+					var verifyDefaultValue = false;
+					var verifyConfirm = null;
+					var verifyOr = null;
+					var verifyMax = null;
+					var verifyMin = null;
+					var verifyCharcterCount = null;	
+					var verifyCharcterCountMax = null;	
+					var verifyCharcterCountMin = null;				
+					var verifyLableID = null;
+					var verifyMessageID = null;
+					var verifyVerification = null;
+					var verifyFlags = '';
+					
+								
+						
+					// Scan attributes	
+					for (var a=0; a < requiredAttributes.length; a++) 
+					{
+	
+						if(requiredAttributes[a].match('email'))
+							verifyEmail = true;
+							
+						else if(requiredAttributes[a] == 'o')
+							verifyOptional = true;	
+							
+						else if(requiredAttributes[a] == 'd')
+							verifyDefaultValue = true;		
+						
+						else if(requiredAttributes[a].match(/^or[0-9]+/)) 
+							verifyOr = requiredAttributes[a].replace(/^or/,'');
+							
+						else if(requiredAttributes[a].match(/^max[0-9]+/)) 
+							verifyMax= parseInt(requiredAttributes[a].replace(/^max/,''));	
+							
+						else if(requiredAttributes[a].match(/^min[0-9]+/)) 
+							verifyMin= parseInt(requiredAttributes[a].replace(/^min/,''));	
+						
+						else if(requiredAttributes[a].match(/^c[0-9]+/)) 
+							verifyConfirm = requiredAttributes[a].replace(/^c/,'');
+						
+						else if(requiredAttributes[a].match(/^vn[0-9]+/)) 
+							verifyVerification = requiredAttributes[a].replace(/^vn/,'');
+							
+						else if(requiredAttributes[a].match(/^nmax[0-9]+/))
+							verifyCharcterCountMax = parseInt(requiredAttributes[a].replace(/^nmax/,''));	
+							
+						else if(requiredAttributes[a].match(/^nmin[0-9]+/))
+							verifyCharcterCountMin = parseInt(requiredAttributes[a].replace(/^nmin/,''));	
+						
+						else if(requiredAttributes[a].match(/^n[0-9]+/))
+							verifyCharcterCount = parseInt(requiredAttributes[a].replace(/^n/,''));				
+						
+						else if(requiredAttributes[a].match(/^l-/)) 
+							verifyLableID = requiredAttributes[a].replace(/^l-/,'').replace(/~~/g,'_');
+							
+						else if(requiredAttributes[a].match(/^f-/))	
+							verifyFlags = requiredAttributes[a].replace(/^f-/,'');
+							
+						else if(requiredAttributes[a].match(/^m-/)) 
+						{
+							verifyMessageID = requiredAttributes[a].replace(/^m-/,'');							
+							setInvalidMessage(verifyMessageID,true);
+						}
+					}					
+					
+					// Verify
+					if(verifyVerification != null) 
+					{
+						if(formObject[i].value != verifyVerification) 
+						{	
+							setInvalid(formObject[i],verifyLableID,verifyDefaultValue);
+							inputValid = false;
+						}
+					} 	
+									
+					// Email
+					else if (verifyEmail) 
+					{
+						if(formObject[i].type == 'textarea') 
+						{
+							var emails = formObject[i].value.replace(/^,|,$/,'').split(',');
+							for (var e = 0; e < emails.length; e++) 
+							{
+								emails[e] = emails[e].replace(/^\s+|\s+$/g,"");
+								if (!emails[e].match(/^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$/i)) 
+								{
+									setInvalid(formObject[i],verifyLableID,verifyDefaultValue);
+									setInvalidMessage(verifyMessageID,false);
+									inputValid = false;
+								}	
+							}					
+						} 
+						else 
+						{				
+							if (!formObject[i].value.match(/^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$/i) && (!verifyOptional || (verifyOptional && formObject[i].value !=''))) 
+							{
+								setInvalid(formObject[i],verifyLableID,verifyDefaultValue);
+								setInvalidMessage(verifyMessageID,false);
+								inputValid = false;
+							}
+						}				
+					} 			
+	
+					// Radio
+					else if (formObject[i].type == 'radio') 
+					{	
+						var validateButton = false;
+						if(formObject[formObject[i].name].length) 
+						{
+							for(var r=0; r < formObject[formObject[i].name].length; r++) 
+							{
+								if(formObject[formObject[i].name][r].checked) 
+								{
+									validateButton = true;
+									break;
+								}
+							}	
+						} 
+						else 
+						{
+							if(formObject[i].checked) 
+								validateButton = true;						
+						}
+						if (!validateButton) 
+						{
+							setInvalid(formObject[i],verifyLableID,verifyDefaultValue);
+							setInvalidMessage(verifyMessageID,false);
+							inputValid = false;
+						}
+					}				
+	
+					// Checkbox	
+					else if (formObject[i].type == 'checkbox') 
+					{
+						var validateButton = false;
+						if(formObject[formObject[i].name].length) 
+						{
+							for(var r=0; r < formObject[formObject[i].name].length; r++) 
+							{
+								if(formObject[formObject[i].name][r].checked) 
+								{
+									validateButton = true;
+									break;
+								}
+							}	
+						}
+						else 
+						{
+							if(formObject[i].checked) 
+								validateButton = true;
+						}
+						if (!validateButton) 
+						{
+							setInvalid(formObject[i],verifyLableID,verifyDefaultValue);
+							setInvalidMessage(verifyMessageID,false);
+							inputValid = false;
+						}	
+					}					
+	
+					// Select
+					else if (formObject[i].type == 'select-one' || formObject[i].type == 'select' ||  formObject[i].type == 'select-multiple') 
+					{
+						if (formObject[i].value == '') 
+						{
+							setInvalid(formObject[i],verifyLableID,verifyDefaultValue);
+							setInvalidMessage(verifyMessageID,false);
+							inputValid = false;
+						}
+					}				
+	
+					// File 
+					else if (formObject[i].type == 'file') 
+					{
+						if (formObject[i].value == '') 
+						{
+							setInvalid(formObject[i],verifyLableID,verifyDefaultValue);
+							setInvalidMessage(verifyMessageID,false);
+							inputValid = false;
+						}	
+					}			
+	
+					// Text & Text Area
+					else if (formObject[i].type == 'password' || formObject[i].type == 'tel' || formObject[i].type == 'email' || formObject[i].type == 'date' || formObject[i].type == 'text' || formObject[i].type == 'textarea' || formObject[i].type == 'hidden') 
+					{						
+						
+						// Or
+						if(verifyOr != null  && requiredOrObjects[verifyOr])
+						{
+							
+						}
+						
+						
+						// Number of charecters Max
+						else if (verifyCharcterCountMax != null && (!verifyOptional || formObject[i].value != '' || (verifyDefaultValue && formObject[i].defaultValue != formObject[i].value))) 
+						{
+							if (formObject[i].value.length >= verifyCharcterCountMax) 
+							{
+								setInvalid(formObject[i],verifyLableID,verifyDefaultValue);
+								setInvalidMessage(verifyMessageID,false);
+								inputValid = false;
+							}
+						} 	
+						
+						// Number of charecters Min
+						else if (verifyCharcterCountMin != null && (!verifyOptional || formObject[i].value != '' || (verifyDefaultValue && formObject[i].defaultValue != formObject[i].value))) 
+						{
+							if (formObject[i].value.length < verifyCharcterCountMin) 
+							{
+								setInvalid(formObject[i],verifyLableID,verifyDefaultValue);
+									setInvalidMessage(verifyMessageID,false);
+								inputValid = false;
+							}
+						} 				
+		
+						// Number of charecters
+						else if (verifyCharcterCount != null && (!verifyOptional || formObject[i].value != '' || (verifyDefaultValue && formObject[i].defaultValue != formObject[i].value)))  
+						{
+							if (formObject[i].value.length != verifyCharcterCount) 
+							{
+								setInvalid(formObject[i],verifyLableID,verifyDefaultValue);
+								setInvalidMessage(verifyMessageID,false);
+								inputValid = false;
+							}
+						} 
+	
+						// Empty
+						else if (!verifyOptional && (formObject[i].value == '' || (verifyDefaultValue && formObject[i].defaultValue == formObject[i].value))) 
+						{
+							setInvalid(formObject[i],verifyLableID,verifyDefaultValue);
+							setInvalidMessage(verifyMessageID,false);
+							inputValid = false;
+						}	
+						
+						// Flags
+						if(inputValid && formObject[i].value != '' && formObject[i].type == 'password' && verifyFlags)
+						{
+							// Number
+							if(verifyFlags.indexOf('N') != -1 && !/[0-9]/.test(formObject[i].value))
+							{
+								setInvalid(formObject[i],verifyLableID,verifyDefaultValue);
+								setInvalidMessage(verifyMessageID,false);
+								inputValid = false;	
+							}
+							
+							// Uppercase
+							else if(verifyFlags.indexOf('U') != -1 && !/[A-Z]/.test(formObject[i].value))
+							{
+								setInvalid(formObject[i],verifyLableID,verifyDefaultValue);
+								setInvalidMessage(verifyMessageID,false);
+								inputValid = false;	
+							}
+							
+							// Lowercase
+							else if(verifyFlags.indexOf('L') != -1 && !/[a-z]/.test(formObject[i].value))
+							{
+								setInvalid(formObject[i],verifyLableID,verifyDefaultValue);
+								setInvalidMessage(verifyMessageID,false);
+								inputValid = false;
+							}
+							
+							// Special
+							else if(verifyFlags.indexOf('!') != -1 && !/[~`!#$%\^&*+=\-\[\]\\';,/{}|\\":<>\?]/g.test(formObject[i].value))
+							{
+								setInvalid(formObject[i],verifyLableID,verifyDefaultValue);
+								setInvalidMessage(verifyMessageID,false);
+								inputValid = false;
+							}
+							
+						}
+						
+					}
+					
+					// Confirmation
+					if(verifyConfirm != null) 
+					{
+						if(requiredConfirmationObjects[verifyConfirm]) 
+						{					
+							if (requiredConfirmationObjects[verifyConfirm] != formObject[i].value) 
+							{
+									setInvalid(formObject[i],verifyLableID,verifyDefaultValue);
+									setInvalidMessage(verifyMessageID,false);
+									inputValid = false;
+							}
+						} 
+						
+						else 
+							requiredConfirmationObjects[verifyConfirm] = formObject[i].value;					
+					}
+					
+					
+					if(verifyOr != null)
+					{
+						if(!requiredOrObjectsInputs[verifyOr])
+							requiredOrObjectsInputs[verifyOr] = [];
+						requiredOrObjectsInputs[verifyOr].push(formObject[i]);					
+					}
+					
+					// Or
+					if(verifyOr != null && inputValid)
+					{
+						requiredOrObjects[verifyOr] = inputValid; 
+					}
+					
+					else if(verifyOr != null && !requiredOrObjects[verifyOr])
+					{
+						requiredOrObjects[verifyOr] = inputValid;
+					}
+						
+					
+					// Max
+					if(verifyMax != null && verifyOr != null)					
+					{	
+						if(!countOrObjects['max'])
+							countOrObjects['max'] = new Object();
+									
+						if(countOrObjects['max'][verifyOr])
+							countOrObjects['max'][verifyOr] += (formObject[i].value != '') ? parseInt(formObject[i].value) : 0; 
+						else 
+							countOrObjects['max'][verifyOr] = (formObject[i].value != '') ? parseInt(formObject[i].value) : 0; 
+						if(countOrObjects['max'][verifyOr] > verifyMax)
+							valid = false;	
+					}
+					
+					// Min
+					if(verifyMin != null && verifyOr != null)					
+					{	
+						if(!countOrObjects['min'])
+							countOrObjects['min'] = new Object();
+									
+						if(!countOrObjects['min'][verifyOr])
+						{
+							countOrObjects['min'][verifyOr] = new Object();
+							countOrObjects['min'][verifyOr]['t'] = verifyMin;
+							countOrObjects['min'][verifyOr]['c'] = (formObject[i].value != '') ? parseInt(formObject[i].value) : 0; 
+						}
+						else 
+							countOrObjects['min'][verifyOr]['c'] += (formObject[i].value != '') ? parseInt(formObject[i].value) : 0;
+					}
+					
+					// Set valid
+					if(!inputValid && verifyOr == null)
+						valid = inputValid;
+					
+			}
+		}	
+		
+		// Verify or's
+		for(id in requiredOrObjects) 
+		{	
+			if(requiredOrObjects[id])
+			{
+				for(var input in requiredOrObjectsInputs[id]) 
+				{ 
+					if(requiredOrObjectsInputs[id][input].onfocus)
+						requiredOrObjectsInputs[id][input].onfocus();
+				}
+			}
+				
+			if(!requiredOrObjects[id]) 
+			{	
+				
+				valid = false;
+				break;	
+			}	
+		}
+		
+		// Verify or's min
+		if(countOrObjects['min'])
+		{
+			for(id in countOrObjects['min']) 
+			{
+				if (countOrObjects['min'][id]['t'] > countOrObjects['min'][id]['c'])
+				{
+					valid = false;
+					break;	
+				}
+			}
+		}
+	
+		// Required Alert
+		if(requiredAlertObjectId != '' && document.getElementById(requiredAlertObjectId)) 
+		{
+			if (!valid)
+				document.getElementById(requiredAlertObjectId).style.display = "block";
+			else
+				document.getElementById(requiredAlertObjectId).style.display = "none";
+			
+		} 
+		
+		// Submit Button
+		if(valid && submitButtonBubble)
+			submitButtonBubble.style.display = "block";
+		
+		// Captcha
+		if(valid && _options.captchaSessionId)
+		{	
+			var obj = this;
+			$.ajax({
+				type: 'GET',
+				dataType: 'text',
+				url: _options.captchaUrl+'?id='+encodeURIComponent(_options.captchaSessionId)+'&value='+encodeURIComponent(_options.form[_options.captchaSessionId].value),
+				success: function (data) 
+				{
+					if(data == 'ok')
+						formObject.submit();	
+					else
+					{
+						_options.form[_options.captchaSessionId].value='';
+						var optionsRecheck = _options ;
+						optionsRecheck.captchaSessionId = '';
+						obj.validate(optionsRecheck);	
+					}
+						
+				}});
+			 return false;
+		}
+
+		// ReCaptch
+
+			// Skip
+			if(_options.grecaptcha && _options.grecaptcha == 'custom'){
+			}
+
+			// Invisible
+			else if(valid && _options.grecaptcha && _options.grecaptcha == 'invisible') {
+
+				// Set
+				DE.tools.form.gRecaptcha = function() {
+					formObject.submit();
+				}
+
+				// Execute
+				grecaptcha.execute();				
+
+				// Flag as false
+				valid = false;
+			}
+
+			// Visible
+			else if(formObject['g-recaptcha-response']) {
+
+				if(valid)
+					valid = formObject['g-recaptcha-response'].value?true:false;
+
+				// Flag
+				var el = document.getElementById('rqrecaptcha');
+				if(el)
+				{ 
+					if(!formObject['g-recaptcha-response'].value)
+						el.classList.add(requiredValue);
+					else
+						el.classList.remove(requiredValue);
+				}
+			}
+		
+		// On valid
+		if(valid && _options.onValid)
+			valid = _options.onValid(_options.form);
+
+		// Stop Event
+		if(!valid && _options.event)
+		{
+			_options.event.preventDefault();
+			_options.event.stopImmediatePropagation()
+			_options.event.stopPropagation();
+		}
+		
+		return valid;
+	},
+	
+	// Submit
+	submit : function ( _options ) 
+	{
+		if(this.validate(_options))
+			_options.form.submit();
+	},	
+
+	// Reset
+	reset : function ( _attrib )
+	{
+		// Reset
+		_attrib.form.reset();	
+		
+		// By Element Class
+		if(_attrib.errorElClass)
+		{
+			// Vars.
+			var elements = _attrib.form.getElementsByClassName(_attrib.errorElClass)
+				i=0;
+				
+			// Scan
+			for(i=0; i < elements.length; i++)
+				elements[i].className = elements[i].className.replace(_attrib.errorClass,'');	
+		}
+		
+		
+	},
+	
+	// Seralize
+	serialize : function ( _form, _brackets  )
+	{
+		// Vars.
+		var form = new Object(),
+			iterateSplit = new Object(),
+			i = 0,
+			n = 0,
+			len = 0,
+			field = null,	
+			fieldType = '',
+			fieldValue = '',			
+			fieldNameSplit = [],
+			splitLen = 0;
+		
+		// Scan form
+		for (i=0, len = _form.elements.length; i < len; i++)
+		{
+			// Cache field element element
+			field = _form.elements[i];
+			
+			// Verify if filed has name attribute defined
+			if(field.name && field.name.length)
+			{				
+				// Set type
+				fieldType = field.type.toLowerCase();				
+				
+				// Single input
+				if(fieldType == 'file' ||  fieldType == 'hidden' || fieldType == 'textarea' || fieldType == 'text' || fieldType == 'email' || fieldType == 'password' || fieldType == 'select' || fieldType == 'select-one')				
+					fieldValue = field.value;	
+				
+				// Checkbox/Radio
+				else if(fieldType == 'checkbox' || fieldType == 'radio' )
+				{					
+					// Mutiple
+					if(_form[field.name].length)
+					{ 
+						if(fieldType == 'checkbox')
+							fieldValue = [];
+						else
+							fieldValue = '';
+						for(var ch =0; ch < _form[field.name].length; ch++) 
+						{
+							if(_form[field.name][ch].checked) 
+							{
+								if(fieldType == 'radio')
+								{
+									fieldValue = _form[field.name][ch].value;
+									break;
+								}
+								else
+									fieldValue.push(_form[field.name][ch].value);
+							}
+						}
+					}
+					
+					// Single
+					else 
+						fieldValue = field.checked?field.value:'';				
+				}
+					
+							
+				
+				// Set value on name path split by .
+				iterateSplit = form;			
+				fieldNameSplit = _brackets?field.name.replace(/\]/g,'').split('['):field.name.split('.');				
+
+				for(n=0, splitLen = fieldNameSplit.length; n < splitLen; n++)
+					if(fieldNameSplit[n])
+					{		
+						// Verify if exists
+						if(!iterateSplit[fieldNameSplit[n]])
+						{
+							// Set value
+							if(n == splitLen-1)
+							{
+								iterateSplit[fieldNameSplit[n]] = fieldValue;								
+								break;
+							}
+							
+							// Add new object
+							else
+								iterateSplit[fieldNameSplit[n]] = {};
+						}
+						
+						// Set
+						iterateSplit = iterateSplit[fieldNameSplit[n]];
+					}
+				
+			}			
+			
+		}	
+		
+		return form;
+	}
+}
